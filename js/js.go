@@ -22,8 +22,8 @@ type Obj = map[string]interface{}
 type Arr = []interface{}
 
 // Get is a shorthand for Global().Get().
-func Get(name string, path ...string) Value {
-	return Value{global}.Get(name, path...)
+func Get(name ...string) Value {
+	return Value{global}.Get(name...)
 }
 
 // Set is a shorthand for Global().Set().
@@ -38,22 +38,19 @@ func Call(name string, args ...interface{}) Value {
 
 // Class searches for a class in global scope.
 // It caches results, so the lookup should be faster than calling Get.
-func Class(class string, path ...string) Value {
-	switch class {
+func Class(class ...string) Value {
+	switch class[0] {
 	case "Object":
 		return Value{object}
 	case "Array":
 		return Value{array}
 	}
-	key := class
-	if len(path) != 0 {
-		key += "." + strings.Join(path, ".")
-	}
+	key := strings.Join(class, ".")
 	mu.RLock()
 	v := classes[key]
 	mu.RUnlock()
 	if v.isZero() {
-		v = Get(class, path...)
+		v = Get(class...)
 		mu.Lock()
 		classes[key] = v
 		mu.Unlock()
@@ -152,9 +149,9 @@ func (v Value) Valid() bool {
 }
 
 // Get returns the JS property by name.
-func (v Value) Get(name string, path ...string) Value {
-	ref := v.Ref.Get(name)
-	for _, p := range path {
+func (v Value) Get(name ...string) Value {
+	ref := v.Ref.Get(name[0])
+	for _, p := range name[1:] {
 		ref = ref.Get(p)
 	}
 	return Value{ref}
